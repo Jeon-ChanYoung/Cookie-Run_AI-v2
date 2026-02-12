@@ -19,20 +19,20 @@ batch_size: 50
 batch_length: 50
 
 # model sizes
-encoded_state_size: 2048
+encoded_state_size: 1024
 recurrent_size: 512
 latent_length: 16
 latent_classes: 16
-latent_size: 256        # 16 * 16 latent_length * latent_classes
-full_state_size: 768    # 512 + 256  recurrent_size + latent_size
+latent_size: 256 # 16 * 16 latent_length * latent_classes
 
 # loss / regularization
 uniform_mix: 0.01
-beta_posterior: 0.1
-beta_prior: 1.0
+posterior_coefficient: 0.1
+prior_coefficient: 0.5
+free_nat: 1
 
 # optimizer
-world_model_lr: 0.0003
+world_model_lr: 0.0001
 world_model_weight_decay: 0.0001
 
 # gradient
