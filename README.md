@@ -1,2 +1,2 @@
-# CookRun-Run-AI
-Cookie Run AI Simulation in an Interactive world model
+# Cookie-Run-AI
+Play in an AI-generated environment by learning the first stage of Cookie Run Ovenbreak, "The Witch's Oven."

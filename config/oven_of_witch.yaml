@@ -1,5 +1,5 @@
 map_name: oven_of_witch
-model_path: model_params/model_ep1000.pth
+model_path: model_params/oow_ep100.pth
 npz_dataset_path: dataset/oow_combined_data.npz
 is_train: false
 
@@ -12,7 +12,7 @@ action_size: 3 # (none, jump, slide)
 
 # training
 start_episodes: 1
-episodes: 1000
+episodes: 300
 world_model_update_step: 50
 
 batch_size: 50

@@ -13,7 +13,6 @@ body {
     justify-content: center;
     align-items: center;  
     margin: 0;
-    padding: 20px;
 }
 
 .container {
@@ -37,12 +36,13 @@ body {
 
 .game-screen {
     position: relative;
-    width: 90vw;
-    height: 45vw;
-    border: 15px solid #383838;
+    width: 1024px;
+    height: 512px;
+    border: 12px solid #2d2d2d;
+    border-radius: 3px;
     overflow: hidden;
     background: #000;
-    filter: contrast(1.1) saturate(1.1);
+    image-rendering: crisp-edges;   
 }
 
 #game-image {
@@ -83,9 +83,9 @@ body {
 /* ============ Buttons ============ */
 
 .btn {
-    font-size: 1.8em;
-    width: 80px;
-    height: 80px;
+    font-size: 2em;
+    width: 90px;
+    height: 90px;
     border: none;
     cursor: pointer;
     background: #4b4b4b;
@@ -104,62 +104,6 @@ body {
     background: #ececec;
 }
 
-/* ============ Loading ============ */
-
-.loading {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(0, 0, 0, 0.85);
-    color: white;
-    padding: 20px 40px;
-    border-radius: 10px;
-    font-size: 1.2em;
-}
-
 .hidden {
     display: none;
-}
-
-@media (max-width: 900px) {
-    .game-screen {
-        width: 90vw;
-        height: 45vw;
-    }
-
-    .btn {
-        font-size: 1.5em;
-        width: 65px;
-        height: 65px;
-    }
-
-    .btn-jump, .btn-slide {
-        font-size: 1.5em;
-    }
-}
-
-@media (max-width: 640px) {
-    .container {
-        padding: 12px;
-    }
-
-    .game-screen {
-        max-width: 500px;
-        max-height: 250px;
-        border-width: 6px;
-    }
-
-    .btn {
-        font-size: 0.9em;
-        padding: 12px 20px;
-    }
-}
-
-@media (max-width: 400px) {
-    .btn {
-        font-size: 0.8em;
-        padding: 10px 15px;
-        border-radius: 8px;
-    }
 }

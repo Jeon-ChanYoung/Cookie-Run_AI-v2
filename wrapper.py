@@ -14,9 +14,9 @@ class Wrapper:
 
         self.world_model.encoder.eval()
         self.world_model.decoder.eval()
-        self.world_model.recurrentModel.eval()
-        self.world_model.priorNetwork.eval()
-        self.world_model.posteriorNetwork.eval()
+        self.world_model.recurrent_model.eval()
+        self.world_model.transition_model.eval()
+        self.world_model.representation_model.eval()
         
         self.action_map = {
             'none': 0,
@@ -52,14 +52,14 @@ class Wrapper:
         action_name = list(self.action_map.keys())[action_index]
         action = self._action_tensors[action_name]
 
-        # latent_size = 20 * 20 = 400
-        self.recurrent_state = self.world_model.recurrentModel(
+        # latent_size = 16 * 16 = 256
+        self.recurrent_state = self.world_model.recurrent_model(
             self.recurrent_state,
             torch.zeros(1, self.config.latent_size, device=self.config.device),
             action
         )
 
-        self.latent_state, _ = self.world_model.posteriorNetwork(
+        self.latent_state, _ = self.world_model.representation_model(
             self.recurrent_state,
             encoded_state
         )
@@ -70,13 +70,13 @@ class Wrapper:
         # action_tensor shape: (1, action_size)
         action_tensor = self._action_tensors.get(action_name, self._action_tensors['none'])
 
-        self.recurrent_state = self.world_model.recurrentModel(
+        self.recurrent_state = self.world_model.recurrent_model(
             self.recurrent_state,
             self.latent_state,
             action_tensor
         )
 
-        self.latent_state, _ = self.world_model.priorNetwork(
+        self.latent_state, _ = self.world_model.transition_model(
             self.recurrent_state
         )
 
@@ -84,9 +84,7 @@ class Wrapper:
     
     @torch.no_grad()
     def get_current_image(self):
-        full_state = torch.cat((self.recurrent_state, self.latent_state), dim=-1)
-
-        reconstruction_img = self.world_model.decoder(full_state) # (1, 3, 128, 256)
+        reconstruction_img = self.world_model.decoder(self.recurrent_state, self.latent_state) # (1, 3, 128, 256)
 
         img = reconstruction_img[0].clamp(0, 1)
         img = (img * 255).byte().cpu().numpy()

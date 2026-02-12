@@ -6,7 +6,10 @@ let isSliding = false;
 let fpsCounter = 0;
 let lastFpsTime = performance.now();
 
+let hudActionTimeout = null; 
+
 const ACTION_REPEAT_INTERVAL = 50; // milliseconds
+const HUD_JUMP_DURATION = 200;
 
 // #################### WebSocket ####################
 
@@ -22,7 +25,12 @@ function connectWebSocket() {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        updateHUDAction(data.current_action);
+
+        if (data.current_action === 'jump') {
+            displayHUDAction('jump', HUD_JUMP_DURATION);
+        } else if (!hudActionTimeout) { 
+            displayHUDAction(data.current_action);
+        }
 
         if (data.status === "error") {
             alert(data.message);
@@ -53,9 +61,20 @@ function sendAction(action) {
 }
 
 // HUD update
-function updateHUDAction(action) {
+function displayHUDAction(action, duration = 0) {
     const hudAction = document.getElementById('hud-action');
     hudAction.textContent = `${action}`;
+    
+    if (hudActionTimeout) {
+        clearTimeout(hudActionTimeout);
+        hudActionTimeout = null;
+    }
+    
+    if (duration > 0) {
+        hudActionTimeout = setTimeout(() => {
+            hudActionTimeout = null;
+        }, duration);
+    }
 }
 
 // FPS counter
@@ -90,16 +109,13 @@ function stopNoneAction() {
 // #################### Jump Action ####################
 
 function handleJump() {
-    // 슬라이드 중이면 무시
     if (isSliding) return;
     
     stopNoneAction();
     sendAction('jump');
     
-    // 점프 후 즉시 none 재시작
     setTimeout(() => startNoneAction(), ACTION_REPEAT_INTERVAL);
     
-    // 버튼 시각 피드백
     const btn = document.getElementById('btn-jump');
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
@@ -131,7 +147,6 @@ function stopSlideAction() {
     
     document.getElementById('btn-slide').classList.remove('active');
     
-    // 슬라이드 종료 후 none 재시작
     setTimeout(() => startNoneAction(), ACTION_REPEAT_INTERVAL);
 }
 
@@ -153,7 +168,6 @@ function resetGame() {
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
     
-    // 리셋 후 none 시작
     startNoneAction();
 }
 
