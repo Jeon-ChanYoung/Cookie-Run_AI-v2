@@ -4,7 +4,6 @@ from fastapi.responses import HTMLResponse
 
 from modules.vae import VAE
 from modules.rssm import RSSM
-from modules.world_model import LFMWorldModel
 from wrapper import Wrapper
 
 def create_app(config):
@@ -17,7 +16,6 @@ def create_app(config):
     print("🔄 Loading resources...")
     vae = VAE(config)
     rssm = RSSM(config)
-    world_model = LFMWorldModel(config, vae, rssm)
     print("✅ Resources loaded.")
     
     @app.get("/", response_class=HTMLResponse)
@@ -32,7 +30,8 @@ def create_app(config):
 
         wrapper = Wrapper(
             config=config,
-            world_model=world_model,
+            vae=vae,
+            rssm=rssm
         )
         
         try:
