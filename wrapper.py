@@ -6,15 +6,17 @@ import numpy as np
 
 from io import BytesIO
 from PIL import Image
-from modules.world_model import LFMWorldModel
+from modules.vae import VAE
+from modules.rssm import RSSM
 
 class Wrapper:
-    def __init__(self, config, world_model: LFMWorldModel):
+    def __init__(self, config, vae: VAE, rssm: RSSM):
         self.config = config
-        self.world_model = world_model
+        self.vae = vae
+        self.rssm = rssm
 
-        self.world_model.flow_decoder.eval()
-        self.world_model.ema.ema_model.eval()
+        self.vae.change_train_mode(train=False)
+        self.rssm.change_train_mode(train=False)
         
         self.action_map = {
             'none': 0,
@@ -41,14 +43,12 @@ class Wrapper:
         # recurrnt_size = 512
         self.recurrent_state = torch.zeros(1, self.config.recurrent_size, device=self.config.device)
     
-        # observation_shape = (1, 3, 128, 256)
-        initial_state = self.single_state_sample()
+        initial_image = self.single_state_sample()          # (1, 3, 128, 256)
+        vae_latent = self.vae.encode(initial_image)         # (1, 4, 16, 32)
+        vae_latent_norm = self.rssm.normalize(vae_latent)   # normalize
+        encoded_state = self.rssm.encoder(vae_latent_norm)  # (1, encoded_state_size)
 
-        encoded_state = self.world_model.rssm.encoder(initial_state)
-
-        action_index = 0
-        action_name = list(self.action_map.keys())[action_index]
-        action = self._action_tensors[action_name]
+        action = self._action_tensors['none']
 
         zero_latent = torch.zeros(
             1, self.config.latent_size, device=self.config.device
@@ -89,15 +89,15 @@ class Wrapper:
     
     @torch.no_grad()
     def get_current_image(self):
-        rssm_state = torch.cat(
-            [self.recurrent_state, self.latent_state], dim=-1
-        )
+        predicted_latent_norm = self.rssm.decoder(
+            self.recurrent_state,    # (1, recurrent_size)
+            self.latent_state        # (1, latent_size)
+        )  # (1, 4, 16, 32)
 
-        reconstruction_img = self.world_model.ode_sample(
-            rssm_state, 
-            steps=25, 
-            method='heun'
-        )
+        # denormalize
+        predicted_latent = self.rssm.denormalize(predicted_latent_norm)
+
+        reconstruction_img = self.vae.decode(predicted_latent)  # (1, 3, 128, 256)
 
         img = reconstruction_img[0].clamp(0, 1)
         img = (img * 255).byte().cpu().numpy()
@@ -119,7 +119,7 @@ class Wrapper:
 
         img_bytes = buffered.getvalue()
         img_base64 = base64.b64encode(img_bytes).decode("utf-8")
-        return f"data:image/jpeg;base64,{img_base64}"
+        return f"data:image/webp;base64,{img_base64}"
 
     def single_state_sample(self):
         idx = np.random.randint(0, len(self.sample_images))
