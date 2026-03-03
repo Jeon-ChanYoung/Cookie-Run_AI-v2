@@ -1,6 +1,4 @@
 let ws = null;
-let noneInterval = null;
-let slideInterval = null;
 let isSliding = false;
 
 let fpsCounter = 0;
@@ -8,7 +6,6 @@ let lastFpsTime = performance.now();
 
 let hudActionTimeout = null; 
 
-const ACTION_REPEAT_INTERVAL = 50; // milliseconds
 const HUD_JUMP_DURATION = 200;
 
 // #################### WebSocket ####################
@@ -20,7 +17,6 @@ function connectWebSocket() {
 
     ws.onopen = () => {
         console.log("WebSocket connected");
-        resetGame();
     };
 
     ws.onmessage = (event) => {
@@ -89,33 +85,16 @@ function countFPS() {
     }
 }
 
-
-// #################### None Action ####################
-
-function startNoneAction() {
-    if (noneInterval || isSliding) return;
-    
-    sendAction('none');
-    noneInterval = setInterval(() => sendAction('none'), ACTION_REPEAT_INTERVAL);
-}
-
-function stopNoneAction() {
-    if (noneInterval) {
-        clearInterval(noneInterval);
-        noneInterval = null;
-    }
-}
-
 // #################### Jump Action ####################
 
 function handleJump() {
     if (isSliding) return;
-    
-    stopNoneAction();
+
     sendAction('jump');
-    
-    setTimeout(() => startNoneAction(), ACTION_REPEAT_INTERVAL);
-    
+
+    // jump는 1회성 → 짧은 딜레이 후 none 복귀
+    setTimeout(() => sendAction('none'), 100);
+
     const btn = document.getElementById('btn-jump');
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
@@ -125,41 +104,27 @@ function handleJump() {
 
 function startSlideAction() {
     if (isSliding) return;
-    
+
     isSliding = true;
-    stopNoneAction();
-    
     sendAction('slide');
-    slideInterval = setInterval(() => sendAction('slide'), ACTION_REPEAT_INTERVAL);
-    
+
     document.getElementById('btn-slide').classList.add('active');
 }
 
 function stopSlideAction() {
     if (!isSliding) return;
-    
+
     isSliding = false;
-    
-    if (slideInterval) {
-        clearInterval(slideInterval);
-        slideInterval = null;
-    }
-    
+    sendAction('none');
+
     document.getElementById('btn-slide').classList.remove('active');
-    
-    setTimeout(() => startNoneAction(), ACTION_REPEAT_INTERVAL);
 }
 
 // #################### Reset & Stop All ####################
 
-function stopAllActions() {
-    stopNoneAction();
-    stopSlideAction();
-}
-
 function resetGame() {
-    stopAllActions();
-    
+    isSliding = false;
+
     if (ws?.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ type: 'reset' }));
     }
@@ -167,11 +132,10 @@ function resetGame() {
     const btn = document.getElementById('btn-reset');
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
-    
-    startNoneAction();
 }
 
 // #################### Event Listeners ####################
+
 // Jump button 
 const jumpBtn = document.getElementById('btn-jump');
 
@@ -232,20 +196,18 @@ const resetKeys = new Set(['r', 'R']);
 let keySliding = false;
 
 document.addEventListener('keydown', (e) => {
-    // Reset
     if (resetKeys.has(e.key)) {
         e.preventDefault();
         resetGame();
         return;
     }
-    
+
     if (jumpKeys.has(e.key) && !e.repeat) {
         e.preventDefault();
         handleJump();
         return;
     }
-    
-    // Slide (hold)
+
     if (slideKeys.has(e.key) && !keySliding) {
         e.preventDefault();
         keySliding = true;
@@ -262,8 +224,9 @@ document.addEventListener('keyup', (e) => {
 
 window.addEventListener('blur', () => {
     keySliding = false;
-    stopSlideAction();
+    if (isSliding) stopSlideAction();
 });
+
 
 // #################### Init ####################
 

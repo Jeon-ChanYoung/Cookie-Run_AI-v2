@@ -1,7 +1,7 @@
 map_name: oven_of_witch
 
 vqvae_path: model_params/vqvae_ep30.pth
-rssm_path: model_params/rssm_ep100.pth
+rssm_path: model_params/rssm_ep150.pth
 
 combined_path: oow_combined_data.npz
 is_train: false
@@ -9,7 +9,7 @@ is_train: false
 observation_shape: [3, 128, 256] # (Channels, Height, Width)
 action_size: 3 # (none, jump, slide)
 
-device: cuda 
+device: cpu 
 
 gradient_norm_type: 2
 gradient_clip: 100

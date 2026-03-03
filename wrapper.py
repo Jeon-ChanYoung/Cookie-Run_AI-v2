@@ -4,8 +4,6 @@ import base64
 import torch
 import numpy as np
 
-from io import BytesIO
-from PIL import Image
 from modules.vqvae import VQVAE
 from modules.rssm import RSSM
 
@@ -110,7 +108,6 @@ class Wrapper:
 
         img = reconstruction_img[0].clamp_(0, 1).mul_(255).byte()
 
-        # ★ 사전 할당 버퍼에 직접 복사 (메모리 할당 없음)
         np.copyto(
             self._img_buffer,
             img.permute(1, 2, 0).cpu().numpy()
@@ -120,13 +117,11 @@ class Wrapper:
     
 
     def image_to_base64(self, img):
-        """★ WEBP → JPEG (인코딩 속도 3~5배 향상)"""
         if isinstance(img, torch.Tensor):
             img = img.cpu().numpy()
         if img.dtype != np.uint8:
             img = (img * 255).astype(np.uint8)
 
-        # ★ OpenCV JPEG 인코딩 (PIL보다 빠름)
         _, encoded = cv2.imencode(
             '.jpg', 
             cv2.cvtColor(img, cv2.COLOR_RGB2BGR),
