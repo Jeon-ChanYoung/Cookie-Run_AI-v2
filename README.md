@@ -10,17 +10,17 @@ https://github.com/Jeon-ChanYoung/Cookie-Run-AI
 |------|--------|
 | **Observation Size** | 128×256 pixels |
 | **Action Space** | 3 actions (None, Jump, Slide) |
-| **Training Data** | 31 real gameplay videos (~27,000 frames) |
+| **Training Data** | 50 real gameplay videos (~48,000 frames) |
 
 <br>
   
 ## Real
-<img src="assets/real.gif" width="512"/>  
+<!-- <img src="assets/real.gif" width="512"/>   -->
 
 <br>
   
 ## Fake (AI-generated)
-<img src="assets/fake.gif" width="512"/>  
+<!-- <img src="assets/fake.gif" width="512"/>   -->
 
 #### Model Architecture & Improvements
 
@@ -51,21 +51,20 @@ Ep  298 | Recon: 90468.18 | MSE: 0.002703 | KL:  5.264
 Ep  299 | Recon: 90467.58 | MSE: 0.002691 | KL:  5.248
 Ep  300 | Recon: 90469.53 | MSE: 0.002730 | KL:  5.282
 ```
-MSE represented the reconstruction loss of the “Gaussian log-likelihood” as the loss of MSE. 
 
 <br>
 
 ## How to Run  
 **1. Clone the repository and install dependencies:** 
 ```
-git clone https://github.com/Jeon-ChanYoung/Cookie-Run-AI.git
+git clone https://github.com/Jeon-ChanYoung/Cookie-Run-AI-v2.git
 pip install -r requirements.txt
 ```
 
 <br>
 
 **2. Setup Pre-trained Model:**  
-Download the pre-trained weights (oow_ep300.pth) from the Releases page and place them in the directory structure as follows:  
+Download the pre-trained weights (vqvae_ep30.pth, rssm_ep150.pth) from the Releases page and place them in the directory structure as follows:  
 ```
 model_params/
     └── rssm_ep100.pth
@@ -83,7 +82,7 @@ python main.py
 <br>
 
 ## Simulation  
-<img src="assets/simulation.gif" width="512"/>  
+<!-- <img src="assets/simulation.gif" width="512"/>   -->
 
 - ⬆️ Arrow Up: Jump
 - ⬇️ Arrow Down: Slide
@@ -97,17 +96,36 @@ Upon starting, the simulation randomly selects an initial image from the samples
 - The training process follows this structure:
   
 ```python
-for episode in range(start_episodes, episodes + 1):
+# vqvae
+for epoch in range(1, vqvae_train_epochs + 1):
+    vqvae.change_train_mode(train=True)
 
-    for _ in range(world_model_update_step): # # world_model_update_step = 50
-        # experiences = memory.sample_mixed(batch_size, batch_length, global_step, balanced_ratio=5)
-        experiences = memory.sample(batch_size, batch_length)
-        recon_loss, kl_loss = model.dynamic_learning(experiences)
+    for batch_index, frames in enumerate(frame_loader, 1):
+        frames = frames.to(device, non_blocking=True)
+        loss, recon_l, vq_l, p_l, usage = vqvae.train_step(frames)
 
     print_losses()
 
-    if episode % 10 == 0:
-        save_model_params(episode, save_dir)
+    vqvae.step_scheduler()
+
+    if epoch % 3 == 0:
+        vqvae.save_vqvae(epoch, save_dir)
+        # vqvae.visualize_recon(frame_loader)
+
+# rssm
+for epoch in range(1, rssm_train_epochs + 1):
+    rssm.change_train_mode(train=True)
+
+    for batch_index, (idx_batch, actions) in enumerate(rssm_loader, 1):
+        idx_batch = idx_batch.to(device, non_blocking=True)
+        actions   = actions.to(device, non_blocking=True)
+        loss, recon_l, kl_l, acc  = rssm.train_step(idx_batch, actions)
+
+    print_losses()
+
+    if epoch % 5 == 0:
+        rssm.save_rssm(epoch, save_dir)
+        # rssm.visualize(vqvae, rssm_loader, epoch=epoch, n_frames=10, save_dir=vis_dir)
 ```
 
 <br> 
