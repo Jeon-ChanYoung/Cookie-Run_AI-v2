@@ -127,8 +127,3 @@ for epoch in range(1, rssm_train_epochs + 1):
         rssm.save_rssm(epoch, save_dir)
         # rssm.visualize(vqvae, rssm_loader, epoch=epoch, n_frames=10, save_dir=vis_dir)
 ```
-
-<br> 
-
-## References  
-- https://github.com/danijar/dreamerv3
