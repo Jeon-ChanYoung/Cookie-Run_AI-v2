@@ -33,23 +33,60 @@ This project is an **enhanced version of Cookie-Run-AI v1**, featuring significa
 | **Encoder** | Standard CNN | Pre-trained VQ-VAE encoder |
 | **Reconstruction Target** | Raw pixels | Latent representations |  
 
+v2 transitions to a two-stage architecture consisting of a VQ-VAE and an RSSM.  
+
+In the first stage, the VQ-VAE incorporates a pre-trained VGG16 network to compute perceptual loss, compressing raw 128x256 images into a discrete 16x32 grid of integer tokens based on a codebook of size 256. 
+
+In the second stage, the RSSM models world dynamics by treating the next-step prediction as a categorical classification task over these discrete tokens rather than a continuous regression task. 
+
+To optimize the training pipeline, the entire image dataset is pre-computed and converted into lightweight integer tokens using the trained VQ-VAE prior to the RSSM phase.  
 
 <br>
 
 ## Loss 
-![Loss](assets/loss.png)  
+
+### VQ-VAE Loss
+<img src="assets/vqvae_recon.png" alt="recon" width="600">
+
 ```
-Ep    1 | Recon: 99355.41 | MSE: 0.183514 | KL:  1.024
-Ep    2 | Recon: 93150.23 | MSE: 0.057269 | KL:  0.601
-Ep    3 | Recon: 91861.38 | MSE: 0.031047 | KL:  0.600
-Ep    4 | Recon: 91526.65 | MSE: 0.024237 | KL:  0.951
-Ep    5 | Recon: 91349.94 | MSE: 0.020642 | KL:  1.353
+Epoch [ 1/30] VQ-VAE loss: 0.203241  recon: 0.014470  vq_l: 0.010847  p_l: 1.779250  usage: 1.0
+Epoch [ 2/30] VQ-VAE loss: 0.182763  recon: 0.012679  vq_l: 0.011716  p_l: 1.583680  usage: 1.0
+Epoch [ 3/30] VQ-VAE loss: 0.167650  recon: 0.011198  vq_l: 0.011293  p_l: 1.451597  usage: 1.0
+Epoch [ 4/30] VQ-VAE loss: 0.159327  recon: 0.010206  vq_l: 0.011196  p_l: 1.379252  usage: 1.0
+Epoch [ 5/30] VQ-VAE loss: 0.159627  recon: 0.010195  vq_l: 0.012017  p_l: 1.374150  usage: 1.0
 ...
-Ep  296 | Recon: 90469.11 | MSE: 0.002722 | KL:  5.413
-Ep  297 | Recon: 90470.75 | MSE: 0.002755 | KL:  5.401
-Ep  298 | Recon: 90468.18 | MSE: 0.002703 | KL:  5.264
-Ep  299 | Recon: 90467.58 | MSE: 0.002691 | KL:  5.248
-Ep  300 | Recon: 90469.53 | MSE: 0.002730 | KL:  5.282
+Epoch [26/30] VQ-VAE loss: 0.136206  recon: 0.007938  vq_l: 0.011916  p_l: 1.163512  usage: 1.0
+Epoch [27/30] VQ-VAE loss: 0.136079  recon: 0.007839  vq_l: 0.012115  p_l: 1.161231  usage: 1.0
+Epoch [28/30] VQ-VAE loss: 0.136079  recon: 0.007839  vq_l: 0.012115  p_l: 1.161231  usage: 1.0
+Epoch [29/30] VQ-VAE loss: 0.135549  recon: 0.007781  vq_l: 0.011987  p_l: 1.155040  usage: 1.0
+Epoch [30/30] VQ-VAE loss: 0.134972  recon: 0.007722  vq_l: 0.011902  p_l: 1.149331  usage: 1.0
+```
+
+<br>
+
+### RSSM Loss
+<img src="assets/rssm_recon.png" alt="recon" width="600">
+
+<br>
+
+<img src="assets/rssm_kl.png" alt="kl" width="600">
+
+<br>
+
+<img src="assets/rssm_acc.png" alt="acc" width="600">
+
+```
+Epoch [  1/100] RSSM loss: 3.428530  recon: 3.415260  kl: 1.327025  acc: 0.3446
+Epoch [  2/100] RSSM loss: 2.967180  recon: 2.941917  kl: 2.526307  acc: 0.4186
+Epoch [  3/100] RSSM loss: 2.726436  recon: 2.695507  kl: 3.092921  acc: 0.4796
+Epoch [  4/100] RSSM loss: 2.506273  recon: 2.477390  kl: 2.888293  acc: 0.5286
+Epoch [  5/100] RSSM loss: 2.510147  recon: 2.480252  kl: 2.989504  acc: 0.5280
+...
+Epoch [ 96/100] RSSM loss: 1.803927  recon: 1.768754  kl: 3.517291  acc: 0.7188
+Epoch [ 97/100] RSSM loss: 1.845641  recon: 1.801281  kl: 3.436019  acc: 0.7082
+Epoch [ 98/100] RSSM loss: 1.817078  recon: 1.783470  kl: 3.360827  acc: 0.7163
+Epoch [ 99/100] RSSM loss: 1.858833  recon: 1.823287  kl: 3.554642  acc: 0.7027
+Epoch [100/100] RSSM loss: 1.825670  recon: 1.791427  kl: 3.424293  acc: 0.7124
 ```
 
 <br>
@@ -64,7 +101,7 @@ pip install -r requirements.txt
 <br>
 
 **2. Setup Pre-trained Model:**  
-Download the pre-trained weights (vqvae_ep30.pth, rssm_ep150.pth) from the Releases page and place them in the directory structure as follows:  
+Download the pre-trained weights (vqvae_ep30.pth, rssm_ep100.pth) from the Releases page and place them in the directory structure as follows:  
 ```
 model_params/
     └── rssm_ep100.pth
@@ -82,7 +119,7 @@ python main.py
 <br>
 
 ## Simulation  
-<img src="assets/simulation.gif" width="512"/>
+<img src="assets/simulation.gif" width="600"/>
 
 - ⬆️ Arrow Up: Jump
 - ⬇️ Arrow Down: Slide
