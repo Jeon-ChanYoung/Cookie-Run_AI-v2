@@ -1,5 +1,5 @@
 # Cookie-Run-AI-v2
-Play in an AI-generated environment by learning the first stage of Cookie Run Ovenbreak, "The Witch's Oven."  
+Play in an environment where an AI learns the first stage of Cookie Run, “The Witch's Oven,” and generates the next screen in real time based on your input.  
 
 **Previous Version:**
 https://github.com/Jeon-ChanYoung/Cookie-Run-AI
